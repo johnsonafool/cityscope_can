@@ -49,6 +49,9 @@
 /* USER CODE END Variables */
 /* Definitions for defaultTask */
 osThreadId_t defaultTaskHandle;
+
+osThreadId_t customTaskHandle;
+
 const osThreadAttr_t defaultTask_attributes = {
   .name = "defaultTask",
   .stack_size = 128 * 4,
@@ -64,10 +67,20 @@ void StartDefaultTask(void *argument)
 {
   for(;;)
   {
-    HAL_GPIO_TogglePin(HC_ECHO_GPIO_Port, HC_TRIG_Pin);
-    osDelay(1000);
+    HAL_GPIO_TogglePin(HC_ECHO_GPIO_Port, HC_ECHO_Pin);    
+    HAL_GPIO_TogglePin(HC_TRIG_GPIO_Port, HC_TRIG_Pin);    
+    HAL_Delay(100);
   }
 };
+
+void StartCustomTask(void *argument)
+{
+  for(;;)
+  {
+    HAL_GPIO_TogglePin(LED_GPIO_Port, LED_Pin);
+    HAL_Delay(100);
+  }
+}
 
 void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
 
@@ -100,6 +113,8 @@ void MX_FREERTOS_Init(void) {
   /* Create the thread(s) */
   /* creation of defaultTask */
   defaultTaskHandle = osThreadNew(StartDefaultTask, NULL, &defaultTask_attributes);
+
+  customTaskHandle = osThreadNew(StartCustomTask, NULL, &defaultTask_attributes);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
