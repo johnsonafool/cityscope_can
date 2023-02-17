@@ -42,16 +42,23 @@
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
+TIM_HandleTypeDef htim1;
 
 /* USER CODE BEGIN PV */
-
+// #define TRIG_PIN GPIO_PIN_9
+// #define TRIG_PORT GPIOA
+// #define ECHO_PIN GPIO_PIN_8
+// #define ECHO_PORT GPIOA
+uint32_t pMillis;
+uint32_t Value1 = 0;
+uint32_t Value2 = 0;
+uint16_t Distance  = 0;  // cm
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 void MX_FREERTOS_Init(void);
 /* USER CODE BEGIN PFP */
-
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -88,14 +95,16 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_CAN_Init();
-  /* USER CODE BEGIN 2 */
 
+  /* USER CODE BEGIN 2 */
+  HAL_TIM_Base_Start(&htim1);
+  HAL_GPIO_WritePin(HC_TRIG_GPIO_Port, HC_TRIG_Pin, GPIO_PIN_RESET);  // pull the TRIG pin low
   /* USER CODE END 2 */
 
   /* Init scheduler */
   osKernelInitialize();  /* Call init function for freertos objects (in freertos.c) */
   MX_FREERTOS_Init();
-
+    
   /* Start scheduler */
   osKernelStart();
 
@@ -105,9 +114,28 @@ int main(void)
   while (1)
   {
     /* USER CODE END WHILE */
+    HAL_GPIO_WritePin(HC_TRIG_GPIO_Port, HC_TRIG_Pin, GPIO_PIN_SET);  // pull the TRIG pin HIGH
+    __HAL_TIM_SET_COUNTER(&htim1, 0);
+    while (__HAL_TIM_GET_COUNTER (&htim1) < 10);  // wait for 10 us
+    HAL_GPIO_WritePin(HC_TRIG_GPIO_Port, HC_TRIG_Pin, GPIO_PIN_RESET);  // pull the TRIG pin low
 
-    /* USER CODE BEGIN 3 */
+    pMillis = HAL_GetTick(); // used this to avoid infinite while loop  (for timeout)
+    // wait for the echo pin to go high
+    while (!(HAL_GPIO_ReadPin (HC_ECHO_GPIO_Port, HC_ECHO_Pin)) && pMillis + 10 >  HAL_GetTick());
+    Value1 = __HAL_TIM_GET_COUNTER (&htim1);
+
+    pMillis = HAL_GetTick(); // used this to avoid infinite while loop (for timeout)
+    // wait for the echo pin to go low
+    while ((HAL_GPIO_ReadPin (HC_ECHO_GPIO_Port, HC_ECHO_Pin)) && pMillis + 50 > HAL_GetTick());
+    Value2 = __HAL_TIM_GET_COUNTER (&htim1);
+
+    Distance = (Value2-Value1)* 0.034/2;
+    HAL_Delay(50);
+    
+    break;
+    /* USER CODE END WHILE */  
   }
+  /* USER CODE BEGIN 3 */
   /* USER CODE END 3 */
 }
 
